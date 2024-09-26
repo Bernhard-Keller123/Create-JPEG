@@ -5,22 +5,18 @@ import io
 import zipfile
 
 import os
-import tkinter as tk
-from tkinter import filedialog
 from PIL import Image
 
+import streamlit as st
 
-def load_and_convert_images():
-    # Öffne einen Dateidialog, um mehrere Bild-Dateien auszuwählen (alle Bildformate)
-    file_paths = filedialog.askopenfilenames(
-        title="Wähle Bild-Dateien aus",
-        filetypes=[("Image files", "*.jpeg *.jpg *.png *.bmp *.gif *.tiff"), ("All files", "*.*")]
-    )
+st.title("Bilder hochladen")
 
-    if not file_paths:
-        print("Keine Dateien ausgewählt.")
-        return
+# Datei-Upload-Komponente von Streamlit
+uploaded_file = st.file_uploader("Wähle ein Bild aus", type=["jpg", "jpeg", "png"])
 
+if uploaded_file is not None:
+    # Verwende den hochgeladenen Inhalt
+    st.image(uploaded_file, caption="Hochgeladenes Bild", use_column_width=True)
     # Öffne einen Dialog, um einen Zielordner für die gespeicherten Bilder auszuwählen
     output_folder = filedialog.askdirectory(title="Wähle einen Zielordner für die Bilder aus")
 
