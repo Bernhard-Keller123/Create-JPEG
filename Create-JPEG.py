@@ -1,47 +1,64 @@
-#importing required packages
-import streamlit
+import os
+import tkinter as tk
+from tkinter import filedialog
 from PIL import Image
-import io
-import zipfile
 
-#adding title of the streamlit app
-streamlit.title('PNG to JPEG Converter')
 
-# let user to upload multiple PNG files using File uploader
-uploaded_files = streamlit.file_uploader("Choose PNG files", type="png", accept_multiple_files=True)
+def load_and_convert_images():
+    # Öffne einen Dateidialog, um mehrere Bild-Dateien auszuwählen (alle Bildformate)
+    file_paths = filedialog.askopenfilenames(
+        title="Wähle Bild-Dateien aus",
+        filetypes=[("Image files", "*.jpeg *.jpg *.png *.bmp *.gif *.tiff"), ("All files", "*.*")]
+    )
 
-# adding a "Convert" button
-if streamlit.button('Convert'):
-    if uploaded_files:
-        # Creating a BytesIO buffer to store the ZIP file
-        zip_buff = io.BytesIO()
-        with zipfile.ZipFile(zip_buff, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-            for uploaded_file in uploaded_files:
-                # opening the image file usnig Image object of PIL package
-                image = Image.open(uploaded_file)
-                 #converting file/s to JPEG
-                converted_image = io.BytesIO()
-                image.convert("RGB").save(converted_image, format='JPEG')
-                converted_image.seek(0)
-                # Displaying the converted image
-                streamlit.write(f"Original file: {uploaded_file.name}")
-                streamlit.image(converted_image, caption='Converted JPEG image', use_column_width=True, output_format="JPEG")
+    if not file_paths:
+        print("Keine Dateien ausgewählt.")
+        return
 
-                # Adding the converted image to the ZIP file we initialized in start
-                zip_file.writestr(uploaded_file.name.replace(".png", ".jpeg"), converted_image.read())
+    # Öffne einen Dialog, um einen Zielordner für die gespeicherten Bilder auszuwählen
+    output_folder = filedialog.askdirectory(title="Wähle einen Zielordner für die Bilder aus")
 
-        # ensuring the buffer is set to the beginning
-        zip_buff.seek(0)
-    
-        if len(uploaded_files)>1:
-            # Create a download button
-            streamlit.download_button(
-                label="Download Converted Images", data=zip_buff , file_name="converted_images.zip", mime="application/zip")
-        else:
-            streamlit.download_button(
-                    label=f"Download {uploaded_file.name.rsplit('.', 1)[0]}.jpeg",
-                    data=converted_image,
-                    file_name=f"{uploaded_file.name.rsplit('.', 1)[0]}.jpeg", on_click=None,
-                    mime="image/jpeg")
-    else:
-        streamlit.warning("Please upload a PNG file.")
+    if not output_folder:
+        print("Kein Zielordner ausgewählt.")
+        return
+
+    for file_path in file_paths:
+        try:
+            # Lade das Bild
+            img = Image.open(file_path)
+            width, height = img.size
+            rotated = False  # Flag um festzustellen, ob das Bild gedreht wurde
+
+            # Überprüfe, ob das Bild im Hochformat ist (Höhe > Breite)
+            if height > width:
+                # Drehe das Bild um 90 Grad, um es ins Querformat zu bringen
+                img = img.rotate(90, expand=True)
+                rotated = True
+                print(f"Bild {file_path} wurde ins Querformat gedreht.")
+            else:
+                print(f"Bild {file_path} ist bereits im Querformat.")
+
+            # Erstelle einen neuen Dateinamen für den Zielordner und speichere als JPG
+            filename, _ = os.path.splitext(os.path.basename(file_path))  # Dateiname ohne Erweiterung
+            new_file_path = os.path.join(output_folder, f"{filename}.jpg")  # Immer .jpg speichern
+
+            # Konvertiere das Bild, falls nötig, und speichere es als JPEG
+            rgb_img = img.convert('RGB')  # Konvertiere das Bild zu RGB, um es als JPG zu speichern
+            rgb_img.save(new_file_path, 'JPEG')  # Speichere es als .jpg
+
+            if rotated:
+                print(f"Bild gespeichert unter: {new_file_path} (umgewandelt und in JPG gespeichert)")
+            else:
+                print(f"Bild gespeichert unter: {new_file_path} (unverändert und in JPG gespeichert)")
+
+        except Exception as e:
+            print(f"Fehler beim Verarbeiten des Bildes {file_path}: {e}")
+
+
+if __name__ == "__main__":
+    # Erstelle das Hauptfenster
+    root = tk.Tk()
+    root.withdraw()  # Versteckt das leere Tkinter-Fenster
+
+    # Rufe die Funktion auf, um Dateien auszuwählen und Bilder zu laden und zu drehen
+    load_and_convert_images()
