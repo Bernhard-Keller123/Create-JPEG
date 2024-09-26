@@ -1,33 +1,23 @@
-#importing required packages
-import streamlit
-from PIL import Image
-import io
-import zipfile
-
 import os
+import streamlit as st
 from PIL import Image
 
-import streamlit as st
-
-st.title("Bilder hochladen")
-
-# Datei-Upload-Komponente von Streamlit
-uploaded_file = st.file_uploader("Wähle ein Bild aus", type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    # Verwende den hochgeladenen Inhalt
-    st.image(uploaded_file, caption="Hochgeladenes Bild", use_column_width=True)
-    # Öffne einen Dialog, um einen Zielordner für die gespeicherten Bilder auszuwählen
-    output_folder = filedialog.askdirectory(title="Wähle einen Zielordner für die Bilder aus")
-
-    if not output_folder:
-        print("Kein Zielordner ausgewählt.")
+def load_and_convert_images(uploaded_files):
+    if not uploaded_files:
+        st.write("Keine Dateien ausgewählt.")
         return
 
-    for file_path in file_paths:
+    # Wähle den Zielordner auf dem lokalen Dateisystem (Optional: Kann durch die Cloud ersetzt werden)
+    output_folder = st.text_input("Gib den Pfad des Zielordners ein, um die Bilder zu speichern:", value="")
+
+    if not output_folder:
+        st.warning("Kein Zielordner ausgewählt.")
+        return
+
+    for uploaded_file in uploaded_files:
         try:
             # Lade das Bild
-            img = Image.open(file_path)
+            img = Image.open(uploaded_file)
             width, height = img.size
             rotated = False  # Flag um festzustellen, ob das Bild gedreht wurde
 
@@ -36,12 +26,12 @@ if uploaded_file is not None:
                 # Drehe das Bild um 90 Grad, um es ins Querformat zu bringen
                 img = img.rotate(90, expand=True)
                 rotated = True
-                print(f"Bild {file_path} wurde ins Querformat gedreht.")
+                st.write(f"Bild {uploaded_file.name} wurde ins Querformat gedreht.")
             else:
-                print(f"Bild {file_path} ist bereits im Querformat.")
+                st.write(f"Bild {uploaded_file.name} ist bereits im Querformat.")
 
             # Erstelle einen neuen Dateinamen für den Zielordner und speichere als JPG
-            filename, _ = os.path.splitext(os.path.basename(file_path))  # Dateiname ohne Erweiterung
+            filename, _ = os.path.splitext(uploaded_file.name)  # Dateiname ohne Erweiterung
             new_file_path = os.path.join(output_folder, f"{filename}.jpg")  # Immer .jpg speichern
 
             # Konvertiere das Bild, falls nötig, und speichere es als JPEG
@@ -49,18 +39,25 @@ if uploaded_file is not None:
             rgb_img.save(new_file_path, 'JPEG')  # Speichere es als .jpg
 
             if rotated:
-                print(f"Bild gespeichert unter: {new_file_path} (umgewandelt und in JPG gespeichert)")
+                st.write(f"Bild gespeichert unter: {new_file_path} (umgewandelt und in JPG gespeichert)")
             else:
-                print(f"Bild gespeichert unter: {new_file_path} (unverändert und in JPG gespeichert)")
+                st.write(f"Bild gespeichert unter: {new_file_path} (unverändert und in JPG gespeichert)")
 
         except Exception as e:
-            print(f"Fehler beim Verarbeiten des Bildes {file_path}: {e}")
-
+            st.error(f"Fehler beim Verarbeiten des Bildes {uploaded_file.name}: {e}")
 
 if __name__ == "__main__":
-    # Erstelle das Hauptfenster
-    root = tk.Tk()
-    root.withdraw()  # Versteckt das leere Tkinter-Fenster
+    st.title("Bildverarbeitungs-App")
 
-    # Rufe die Funktion auf, um Dateien auszuwählen und Bilder zu laden und zu drehen
-    load_and_convert_images()
+    # Lade mehrere Dateien hoch
+    uploaded_files = st.file_uploader("Lade eine oder mehrere Bilddateien hoch", type=["jpeg", "jpg", "png", "bmp", "gif", "tiff"], accept_multiple_files=True)
+
+    if uploaded_files:
+        # Zeige hochgeladene Bilder an
+        for uploaded_file in uploaded_files:
+            img = Image.open(uploaded_file)
+            st.image(img, caption=f"Hochgeladenes Bild: {uploaded_file.name}", use_column_width=True)
+        
+        # Button zur Verarbeitung der Bilder
+        if st.button("Bilder verarbeiten und als JPG speichern"):
+            load_and_convert_images(uploaded_files)
