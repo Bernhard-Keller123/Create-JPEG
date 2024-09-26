@@ -1,3 +1,9 @@
+#importing required packages
+import streamlit
+from PIL import Image
+import io
+import zipfile
+
 import os
 import tkinter as tk
 from tkinter import filedialog
